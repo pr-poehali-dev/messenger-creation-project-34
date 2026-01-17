@@ -98,9 +98,14 @@ export default function Index() {
   return (
     <div className="flex h-screen bg-background">
       <div className="w-20 bg-card border-r border-border flex flex-col items-center py-4 space-y-6">
-        <Button variant="ghost" size="icon" className="rounded-full">
-          <Icon name="Menu" size={24} />
-        </Button>
+        <div className="flex flex-col items-center gap-2">
+          <img 
+            src="https://cdn.poehali.dev/projects/b10a89c7-7414-4c1b-a443-a0c39d2d3b0d/files/c7d52477-a9e3-4132-9c40-a0a10847f780.jpg" 
+            alt="Vox Logo" 
+            className="w-12 h-12 rounded-xl object-cover"
+          />
+          <span className="text-xs font-semibold text-primary">VOX</span>
+        </div>
         
         <Separator className="w-8" />
         
@@ -129,7 +134,17 @@ export default function Index() {
 
       <div className="w-80 bg-card border-r border-border flex flex-col">
         <div className="p-4 space-y-4">
-          <h2 className="text-2xl font-bold">{tabs.find(t => t.id === activeTab)?.label}</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold">{tabs.find(t => t.id === activeTab)?.label}</h2>
+            <div className="flex items-center gap-2">
+              <img 
+                src="https://cdn.poehali.dev/projects/b10a89c7-7414-4c1b-a443-a0c39d2d3b0d/files/c7d52477-a9e3-4132-9c40-a0a10847f780.jpg" 
+                alt="Vox" 
+                className="w-8 h-8 rounded-lg object-cover"
+              />
+              <span className="text-lg font-bold text-primary">VOX</span>
+            </div>
+          </div>
           
           <div className="relative">
             <Icon name="Search" size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />

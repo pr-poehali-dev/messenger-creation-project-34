@@ -1,14 +1,263 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useState } from 'react';
+import Icon from '@/components/ui/icon';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
 
-const Index = () => {
+type Chat = {
+  id: number;
+  name: string;
+  avatar: string;
+  lastMessage: string;
+  time: string;
+  unread: number;
+  online: boolean;
+  type: 'chat' | 'group' | 'channel';
+};
+
+type Message = {
+  id: number;
+  text: string;
+  time: string;
+  sender: 'me' | 'other';
+  reactions?: string[];
+};
+
+const mockChats: Chat[] = [
+  { id: 1, name: 'Анна Смирнова', avatar: '', lastMessage: 'Привет! Как дела?', time: '14:32', unread: 2, online: true, type: 'chat' },
+  { id: 2, name: 'Рабочая группа', avatar: '', lastMessage: 'Александр: Отлично, начинаем!', time: '13:15', unread: 0, online: false, type: 'group' },
+  { id: 3, name: 'Дмитрий Петров', avatar: '', lastMessage: 'Созвонимся завтра?', time: '11:20', unread: 1, online: false, type: 'chat' },
+  { id: 4, name: 'Новости технологий', avatar: '', lastMessage: 'Вышла новая версия React', time: 'вчера', unread: 0, online: false, type: 'channel' },
+  { id: 5, name: 'Семья', avatar: '', lastMessage: 'Мама: Не забудь позвонить', time: 'вчера', unread: 5, online: false, type: 'group' },
+];
+
+const mockMessages: Message[] = [
+  { id: 1, text: 'Привет! Как твои дела?', time: '14:25', sender: 'other' },
+  { id: 2, text: 'Отлично! Работаю над новым проектом', time: '14:28', sender: 'me' },
+  { id: 3, text: 'Звучит интересно, расскажешь подробнее?', time: '14:30', sender: 'other', reactions: ['👍', '❤️'] },
+  { id: 4, text: 'Конечно! Это мессенджер с современным дизайном', time: '14:32', sender: 'me' },
+];
+
+export default function Index() {
+  const [activeTab, setActiveTab] = useState<'chats' | 'contacts' | 'calls' | 'channels' | 'groups'>('chats');
+  const [selectedChat, setSelectedChat] = useState<Chat | null>(mockChats[0]);
+  const [messages, setMessages] = useState<Message[]>(mockMessages);
+  const [messageInput, setMessageInput] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const tabs = [
+    { id: 'chats', label: 'Чаты', icon: 'MessageCircle' },
+    { id: 'contacts', label: 'Контакты', icon: 'Users' },
+    { id: 'calls', label: 'Звонки', icon: 'Phone' },
+    { id: 'channels', label: 'Каналы', icon: 'Radio' },
+    { id: 'groups', label: 'Группы', icon: 'UsersRound' },
+  ];
+
+  const handleSendMessage = () => {
+    if (messageInput.trim()) {
+      const newMessage: Message = {
+        id: messages.length + 1,
+        text: messageInput,
+        time: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
+        sender: 'me',
+      };
+      setMessages([...messages, newMessage]);
+      setMessageInput('');
+    }
+  };
+
+  const filteredChats = mockChats.filter(chat => 
+    chat.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4 color-black text-black">Добро пожаловать!</h1>
-        <p className="text-xl text-gray-600">тут будет отображаться ваш проект</p>
+    <div className="flex h-screen bg-background">
+      <div className="w-20 bg-card border-r border-border flex flex-col items-center py-4 space-y-6">
+        <Button variant="ghost" size="icon" className="rounded-full">
+          <Icon name="Menu" size={24} />
+        </Button>
+        
+        <Separator className="w-8" />
+        
+        <div className="flex flex-col gap-4">
+          {tabs.map((tab) => (
+            <Button
+              key={tab.id}
+              variant="ghost"
+              size="icon"
+              className={`rounded-full transition-colors ${
+                activeTab === tab.id ? 'bg-primary text-primary-foreground hover:bg-primary/90' : ''
+              }`}
+              onClick={() => setActiveTab(tab.id as any)}
+            >
+              <Icon name={tab.icon as any} size={24} />
+            </Button>
+          ))}
+        </div>
+        
+        <div className="mt-auto">
+          <Button variant="ghost" size="icon" className="rounded-full">
+            <Icon name="Settings" size={24} />
+          </Button>
+        </div>
+      </div>
+
+      <div className="w-80 bg-card border-r border-border flex flex-col">
+        <div className="p-4 space-y-4">
+          <h2 className="text-2xl font-bold">{tabs.find(t => t.id === activeTab)?.label}</h2>
+          
+          <div className="relative">
+            <Icon name="Search" size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Поиск..."
+              className="pl-10"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+        </div>
+
+        <ScrollArea className="flex-1 scrollbar-thin">
+          <div className="space-y-1 p-2">
+            {filteredChats.map((chat) => (
+              <button
+                key={chat.id}
+                onClick={() => setSelectedChat(chat)}
+                className={`w-full flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors ${
+                  selectedChat?.id === chat.id ? 'bg-muted' : ''
+                }`}
+              >
+                <div className="relative">
+                  <Avatar>
+                    <AvatarImage src={chat.avatar} />
+                    <AvatarFallback className="bg-primary/10 text-primary font-medium">
+                      {chat.name.charAt(0)}
+                    </AvatarFallback>
+                  </Avatar>
+                  {chat.online && (
+                    <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-card" />
+                  )}
+                </div>
+
+                <div className="flex-1 min-w-0 text-left">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-medium truncate">{chat.name}</span>
+                    <span className="text-xs text-muted-foreground ml-2">{chat.time}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-muted-foreground truncate">{chat.lastMessage}</p>
+                    {chat.unread > 0 && (
+                      <Badge className="ml-2 rounded-full min-w-[20px] h-5 flex items-center justify-center px-1.5">
+                        {chat.unread}
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </ScrollArea>
+      </div>
+
+      <div className="flex-1 flex flex-col">
+        {selectedChat ? (
+          <>
+            <div className="h-16 bg-card border-b border-border flex items-center justify-between px-6">
+              <div className="flex items-center gap-3">
+                <Avatar>
+                  <AvatarImage src={selectedChat.avatar} />
+                  <AvatarFallback className="bg-primary/10 text-primary font-medium">
+                    {selectedChat.name.charAt(0)}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <h3 className="font-medium">{selectedChat.name}</h3>
+                  <p className="text-xs text-muted-foreground">
+                    {selectedChat.online ? 'в сети' : 'был(а) недавно'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="icon">
+                  <Icon name="Phone" size={20} />
+                </Button>
+                <Button variant="ghost" size="icon">
+                  <Icon name="Video" size={20} />
+                </Button>
+                <Button variant="ghost" size="icon">
+                  <Icon name="MoreVertical" size={20} />
+                </Button>
+              </div>
+            </div>
+
+            <ScrollArea className="flex-1 p-6 scrollbar-thin">
+              <div className="space-y-4 max-w-4xl mx-auto">
+                {messages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`flex ${message.sender === 'me' ? 'justify-end' : 'justify-start'}`}
+                  >
+                    <div
+                      className={`max-w-md px-4 py-2 rounded-2xl ${
+                        message.sender === 'me'
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted text-foreground'
+                      }`}
+                    >
+                      <p className="text-sm">{message.text}</p>
+                      <div className="flex items-center justify-between mt-1 gap-3">
+                        <span className="text-xs opacity-70">{message.time}</span>
+                        {message.reactions && message.reactions.length > 0 && (
+                          <div className="flex gap-1">
+                            {message.reactions.map((emoji, idx) => (
+                              <span key={idx} className="text-xs">
+                                {emoji}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+
+            <div className="h-20 bg-card border-t border-border flex items-center gap-3 px-6">
+              <Button variant="ghost" size="icon">
+                <Icon name="Paperclip" size={20} />
+              </Button>
+              
+              <Input
+                placeholder="Напишите сообщение..."
+                value={messageInput}
+                onChange={(e) => setMessageInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                className="flex-1"
+              />
+
+              <Button variant="ghost" size="icon">
+                <Icon name="Smile" size={20} />
+              </Button>
+
+              <Button size="icon" onClick={handleSendMessage}>
+                <Icon name="Send" size={20} />
+              </Button>
+            </div>
+          </>
+        ) : (
+          <div className="flex-1 flex items-center justify-center text-muted-foreground">
+            <div className="text-center space-y-2">
+              <Icon name="MessageCircle" size={64} className="mx-auto opacity-20" />
+              <p className="text-lg">Выберите чат для начала общения</p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
-};
-
-export default Index;
+}

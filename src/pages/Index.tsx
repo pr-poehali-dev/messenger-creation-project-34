@@ -8,6 +8,8 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import EmojiPicker from '@/components/EmojiPicker';
+import StatusViewer from '@/components/StatusViewer';
+import CreateStatus from '@/components/CreateStatus';
 
 type Chat = {
   id: number;
@@ -29,6 +31,18 @@ type Message = {
   isSticker?: boolean;
 };
 
+type Status = {
+  id: number;
+  userId: number;
+  userName: string;
+  userAvatar: string;
+  content: string;
+  timestamp: string;
+  backgroundColor: string;
+  textColor: string;
+  hasStatus?: boolean;
+};
+
 const mockChats: Chat[] = [
   { id: 1, name: 'Анна Смирнова', avatar: '', lastMessage: 'Привет! Как дела?', time: '14:32', unread: 2, online: true, type: 'chat' },
   { id: 2, name: 'Рабочая группа', avatar: '', lastMessage: 'Александр: Отлично, начинаем!', time: '13:15', unread: 0, online: false, type: 'group' },
@@ -44,6 +58,12 @@ const mockMessages: Message[] = [
   { id: 4, text: 'Конечно! Это мессенджер с современным дизайном', time: '14:32', sender: 'me' },
 ];
 
+const mockStatuses: Status[] = [
+  { id: 1, userId: 1, userName: 'Анна Смирнова', userAvatar: '', content: 'Отличное настроение сегодня! ☀️', timestamp: '2 ч назад', backgroundColor: '#0EA5E9', textColor: '#FFFFFF', hasStatus: true },
+  { id: 2, userId: 3, userName: 'Дмитрий Петров', userAvatar: '', content: 'Работаю над новым проектом 🚀', timestamp: '5 ч назад', backgroundColor: '#8B5CF6', textColor: '#FFFFFF', hasStatus: true },
+  { id: 3, userId: 2, userName: 'Рабочая группа', userAvatar: '', content: 'Встреча в 15:00', timestamp: '1 ч назад', backgroundColor: '#EC4899', textColor: '#FFFFFF', hasStatus: true },
+];
+
 export default function Index() {
   const [activeTab, setActiveTab] = useState<'chats' | 'contacts' | 'calls' | 'channels' | 'groups'>('chats');
   const [selectedChat, setSelectedChat] = useState<Chat | null>(mockChats[0]);
@@ -51,6 +71,10 @@ export default function Index() {
   const [messageInput, setMessageInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [statuses, setStatuses] = useState<Status[]>(mockStatuses);
+  const [viewingStatus, setViewingStatus] = useState(false);
+  const [currentStatusIndex, setCurrentStatusIndex] = useState(0);
+  const [showCreateStatus, setShowCreateStatus] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const tabs = [
@@ -89,6 +113,38 @@ export default function Index() {
     };
     setMessages([...messages, newMessage]);
     setShowEmojiPicker(false);
+  };
+
+  const handlePublishStatus = (content: string, backgroundColor: string, textColor: string) => {
+    const newStatus: Status = {
+      id: statuses.length + 1,
+      userId: 0,
+      userName: 'Вы',
+      userAvatar: '',
+      content,
+      timestamp: 'только что',
+      backgroundColor,
+      textColor,
+      hasStatus: true,
+    };
+    setStatuses([newStatus, ...statuses]);
+  };
+
+  const handleViewStatus = (index: number) => {
+    setCurrentStatusIndex(index);
+    setViewingStatus(true);
+  };
+
+  const handleNextStatus = () => {
+    if (currentStatusIndex < statuses.length - 1) {
+      setCurrentStatusIndex(currentStatusIndex + 1);
+    }
+  };
+
+  const handlePreviousStatus = () => {
+    if (currentStatusIndex > 0) {
+      setCurrentStatusIndex(currentStatusIndex - 1);
+    }
   };
 
   const filteredChats = mockChats.filter(chat => 
@@ -159,6 +215,47 @@ export default function Index() {
 
         <ScrollArea className="flex-1 scrollbar-thin">
           <div className="space-y-1 p-2">
+            <div className="mb-4">
+              <div className="flex items-center justify-between px-2 mb-3">
+                <h3 className="text-sm font-semibold text-muted-foreground">Статусы</h3>
+              </div>
+              <div className="flex gap-3 overflow-x-auto pb-2 px-2 scrollbar-thin">
+                <button
+                  onClick={() => setShowCreateStatus(true)}
+                  className="flex flex-col items-center gap-2 flex-shrink-0"
+                >
+                  <div className="w-14 h-14 rounded-full bg-primary flex items-center justify-center">
+                    <Icon name="Plus" size={24} className="text-primary-foreground" />
+                  </div>
+                  <span className="text-xs text-muted-foreground">Ваш статус</span>
+                </button>
+
+                {statuses.map((status, idx) => (
+                  <button
+                    key={status.id}
+                    onClick={() => handleViewStatus(idx)}
+                    className="flex flex-col items-center gap-2 flex-shrink-0"
+                  >
+                    <div className="relative">
+                      <div className="w-14 h-14 rounded-full p-0.5 bg-gradient-to-tr from-primary to-accent">
+                        <Avatar className="w-full h-full border-2 border-card">
+                          <AvatarImage src={status.userAvatar} />
+                          <AvatarFallback className="bg-primary/10 text-primary font-medium">
+                            {status.userName.charAt(0)}
+                          </AvatarFallback>
+                        </Avatar>
+                      </div>
+                    </div>
+                    <span className="text-xs text-muted-foreground max-w-[60px] truncate">
+                      {status.userName}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <Separator className="my-3" />
+
             {filteredChats.map((chat) => (
               <button
                 key={chat.id}
@@ -316,6 +413,22 @@ export default function Index() {
           </div>
         )}
       </div>
+
+      {viewingStatus && (
+        <StatusViewer
+          statuses={statuses}
+          currentIndex={currentStatusIndex}
+          onClose={() => setViewingStatus(false)}
+          onNext={handleNextStatus}
+          onPrevious={handlePreviousStatus}
+        />
+      )}
+
+      <CreateStatus
+        open={showCreateStatus}
+        onClose={() => setShowCreateStatus(false)}
+        onPublish={handlePublishStatus}
+      />
     </div>
   );
 }

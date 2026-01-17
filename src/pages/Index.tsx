@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Icon from '@/components/ui/icon';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -6,6 +6,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import EmojiPicker from '@/components/EmojiPicker';
 
 type Chat = {
   id: number;
@@ -24,6 +26,7 @@ type Message = {
   time: string;
   sender: 'me' | 'other';
   reactions?: string[];
+  isSticker?: boolean;
 };
 
 const mockChats: Chat[] = [
@@ -47,6 +50,8 @@ export default function Index() {
   const [messages, setMessages] = useState<Message[]>(mockMessages);
   const [messageInput, setMessageInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const tabs = [
     { id: 'chats', label: 'Чаты', icon: 'MessageCircle' },
@@ -67,6 +72,23 @@ export default function Index() {
       setMessages([...messages, newMessage]);
       setMessageInput('');
     }
+  };
+
+  const handleEmojiSelect = (emoji: string) => {
+    setMessageInput((prev) => prev + emoji);
+    inputRef.current?.focus();
+  };
+
+  const handleStickerSelect = (sticker: string) => {
+    const newMessage: Message = {
+      id: messages.length + 1,
+      text: sticker,
+      time: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
+      sender: 'me',
+      isSticker: true,
+    };
+    setMessages([...messages, newMessage]);
+    setShowEmojiPicker(false);
   };
 
   const filteredChats = mockChats.filter(chat => 
@@ -202,25 +224,35 @@ export default function Index() {
                     className={`flex ${message.sender === 'me' ? 'justify-end' : 'justify-start'}`}
                   >
                     <div
-                      className={`max-w-md px-4 py-2 rounded-2xl ${
-                        message.sender === 'me'
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted text-foreground'
+                      className={`${
+                        message.isSticker
+                          ? ''
+                          : `max-w-md px-4 py-2 rounded-2xl ${
+                              message.sender === 'me'
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-muted text-foreground'
+                            }`
                       }`}
                     >
-                      <p className="text-sm">{message.text}</p>
-                      <div className="flex items-center justify-between mt-1 gap-3">
-                        <span className="text-xs opacity-70">{message.time}</span>
-                        {message.reactions && message.reactions.length > 0 && (
-                          <div className="flex gap-1">
-                            {message.reactions.map((emoji, idx) => (
-                              <span key={idx} className="text-xs">
-                                {emoji}
-                              </span>
-                            ))}
+                      {message.isSticker ? (
+                        <div className="text-7xl">{message.text}</div>
+                      ) : (
+                        <>
+                          <p className="text-sm">{message.text}</p>
+                          <div className="flex items-center justify-between mt-1 gap-3">
+                            <span className="text-xs opacity-70">{message.time}</span>
+                            {message.reactions && message.reactions.length > 0 && (
+                              <div className="flex gap-1">
+                                {message.reactions.map((emoji, idx) => (
+                                  <span key={idx} className="text-xs">
+                                    {emoji}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
+                        </>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -233,6 +265,7 @@ export default function Index() {
               </Button>
               
               <Input
+                ref={inputRef}
                 placeholder="Напишите сообщение..."
                 value={messageInput}
                 onChange={(e) => setMessageInput(e.target.value)}
@@ -240,9 +273,19 @@ export default function Index() {
                 className="flex-1"
               />
 
-              <Button variant="ghost" size="icon">
-                <Icon name="Smile" size={20} />
-              </Button>
+              <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="icon">
+                    <Icon name="Smile" size={20} />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0 border-0" align="end" side="top">
+                  <EmojiPicker
+                    onEmojiSelect={handleEmojiSelect}
+                    onStickerSelect={handleStickerSelect}
+                  />
+                </PopoverContent>
+              </Popover>
 
               <Button size="icon" onClick={handleSendMessage}>
                 <Icon name="Send" size={20} />
